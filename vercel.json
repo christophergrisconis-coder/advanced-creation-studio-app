@@ -1,6 +1,7 @@
 {
-  "buildCommand": "expo export --platform web && npm run build",
-  "installCommand": "npm install",
-  "framework": "expo",
-  "outputDirectory": "dist"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npx expo export --platform web",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false
 }
