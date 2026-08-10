@@ -31,6 +31,17 @@ const BRAND = {
 
 const { width: W } = Dimensions.get('window');
 
+// Brand assets. The supplied lockup shipped as a JPEG with a flat #0E1421
+// background baked in, which showed as a lighter rectangle on every surface
+// it sat on. Both files below are alpha-cut versions of it, so they composite
+// cleanly anywhere. LOGO_MARK is the standalone GIL> chevron for tight spots
+// like the nav, where the full lockup's wordmark is too small to read.
+const LOGO_LOCKUP = require('../assets/images/logo-lockup.png');
+const LOCKUP_ASPECT = 1817 / 576;
+
+const LOGO_MARK = require('../assets/images/logo-mark.png');
+const MARK_ASPECT = 547 / 429;
+
 // ─── DATA ───────────────────────────────────────────────────────
 const NAV_ITEMS = ['Home', 'About', 'Services', 'Mission', 'Contact'];
 
@@ -226,8 +237,7 @@ function ProfilePortrait() {
         <Image source={PROFILE_PHOTO} style={styles.profilePhoto} resizeMode="cover" />
       ) : (
         <View style={styles.profileMonogram}>
-          <Text style={styles.profileMonogramText}>ACS</Text>
-          <View style={styles.profileMonogramRule} />
+          <Image source={LOGO_MARK} style={styles.profileMonogramMark} resizeMode="contain" />
         </View>
       )}
 
@@ -438,9 +448,12 @@ function ContactSection() {
 function FooterSection() {
   return (
     <View style={styles.footer}>
-      <Text style={styles.footerLogo}>
-        ADVANCED<Text style={{ color: BRAND.blue }}>CREATION</Text> STUDIO
-      </Text>
+      <Image
+        source={LOGO_LOCKUP}
+        style={styles.footerLogo}
+        resizeMode="contain"
+        accessibilityLabel="Advanced Creation Studio"
+      />
       <Text style={styles.footerTagline}>
         A unified brand system built for trust, clarity, and compliance. Ready for digital distribution and government contract submission.
       </Text>
@@ -477,9 +490,12 @@ export default function App() {
 
       {/* ── Sticky Nav ── */}
       <View style={styles.nav}>
-        <Text style={styles.navLogo}>
-          ACS <Text style={{ color: BRAND.blue }}>|</Text>
-        </Text>
+        <Image
+          source={LOGO_MARK}
+          style={styles.navLogo}
+          resizeMode="contain"
+          accessibilityLabel="Advanced Creation Studio"
+        />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navItems}>
           {NAV_ITEMS.map(item => (
             <TouchableOpacity key={item} onPress={() => scrollTo(item)} style={styles.navItem}>
@@ -544,7 +560,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     zIndex: 100,
   },
-  navLogo: { color: BRAND.white, fontWeight: '900', fontSize: 15, marginRight: 12, letterSpacing: 1 },
+  navLogo: { width: 30 * MARK_ASPECT, height: 30, marginRight: 14 },
   navItems: { flexDirection: 'row', gap: 4 },
   navItem: { paddingHorizontal: 12, paddingVertical: 6, alignItems: 'center' },
   navItemText: { color: BRAND.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
@@ -601,8 +617,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileMonogramText: { color: BRAND.blue, fontSize: 34, fontWeight: '900', letterSpacing: 3 },
-  profileMonogramRule: { width: 34, height: 2, backgroundColor: 'rgba(30,144,255,0.45)', marginTop: 10 },
+  profileMonogramMark: { width: 78, height: 78 / MARK_ASPECT },
   profileName: { color: BRAND.white, fontSize: 15, fontWeight: '800', letterSpacing: 0.5, marginTop: 14 },
   profileTitle: { color: BRAND.textMuted, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', marginTop: 4 },
 
@@ -663,7 +678,7 @@ const styles = StyleSheet.create({
 
   // Footer
   footer: { backgroundColor: BRAND.navyDark, borderTopWidth: 1, borderTopColor: BRAND.border, paddingHorizontal: 20, paddingVertical: 40 },
-  footerLogo: { color: BRAND.white, fontWeight: '900', fontSize: 15, letterSpacing: 1 },
+  footerLogo: { width: 56 * LOCKUP_ASPECT, height: 56, marginLeft: -4 },
   footerTagline: { color: BRAND.textSub, fontSize: 13, lineHeight: 20, marginTop: 10, maxWidth: 300 },
   footerDivider: { height: 1, backgroundColor: BRAND.border, marginVertical: 24 },
   footerBottom: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
