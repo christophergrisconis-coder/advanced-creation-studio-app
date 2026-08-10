@@ -2,38 +2,65 @@
 
 ## Part 1: Deploy Expo App to Vercel (No Apple Developer / Expo Cloud)
 
-### Quick Start (2-3 minutes)
+> Full reference, including every trap we hit and how to verify a build:
+> **[EXPO-VERCEL-TEMPLATE.md](./EXPO-VERCEL-TEMPLATE.md)**
+
+### How to deploy
+
+The repo is already connected to the Vercel project **`advanced-creation-studio-app`**.
 
 ```bash
-# 1. Install Vercel CLI
-npm i -g vercel
-
-# 2. Login to Vercel
-vercel login
-# (Opens browser, authenticate with GitHub)
-
-# 3. Deploy from project root
-cd ~/Desktop/advanced-creation-studio
-vercel --prod
+git push origin main
 ```
 
-Your app will be live at `advanced-creation-studio.vercel.app` (or a custom domain if you configure it).
+That is the entire deploy process. Vercel rebuilds and updates the production
+URL automatically.
 
-### What Happens
-- Vercel detects the Expo app
-- Builds web version automatically (`expo export --platform web`)
-- Deploys to Vercel's CDN (60+ regions worldwide)
-- HTTPS by default
-- Free tier includes unlimited deployments
+**Live URL:** https://advanced-creation-studio-app.vercel.app
 
-### Custom Domain (optional)
-After first deployment:
+### Do not run `vercel --prod` from this folder
+
+An earlier version of this guide said to. Don't. If a project with the name
+already exists the CLI creates a *new* one with a random suffix, and this repo
+accumulated **nine** Vercel projects for one app that way — several serving
+stale builds, which looked exactly like broken deploys. They have since been
+deleted; only `advanced-creation-studio-app` (this app) and
+`advanced-creation-studio` (the separate HTML marketing site) remain.
+
+### Never bookmark a URL with a hash in it
+
+```
+advanced-creation-studio-app.vercel.app          ✅ production, updates on push
+advanced-creation-studio-app-v2-live-p7j6852cb…  ❌ one frozen build, never updates
+```
+
+Hash URLs serve one specific build permanently. Checking one after a fix will
+always show the old version.
+
+### Vercel does not auto-detect Expo
+
+There is no Expo framework preset. The build is driven entirely by `vercel.json`:
+
+```json
+{
+  "buildCommand": "npx expo export --platform web",
+  "outputDirectory": "dist"
+}
+```
+
+Framework Preset in the dashboard must stay on **"Other"** — see
+`scripts/generate_vercel_config.py`, which enforces this.
+
+### Verify before pushing
+
 ```bash
-vercel alias set <deployment-url> www.advancedcreationstudio-app.com
+rm -rf dist && npx expo export --platform web
+grep -c "reset-project\|Try editing" dist/index.html   # must be 0
+npx serve dist -l 4173
 ```
 
-### Environment Variables (if needed)
-In Vercel dashboard → Settings → Environment Variables, add any `.env` vars your app needs.
+### Environment Variables
+Vercel dashboard → Settings → Environment Variables.
 
 ---
 
@@ -167,7 +194,8 @@ Add to `../advancedcreationstudio/index.html` hero section:
 
 | Task | Command | Time |
 |---|---|---|
-| Deploy to Vercel | `vercel --prod` | 2 min |
+| Deploy to Vercel | `git push origin main` | 2 min |
+| Audit Vercel projects | `vercel project ls` | 10 sec |
 | Generate video scripts | `node video-generator.js` | 1 min |
 | Record voiceover | DIY or hire | 15 min - 1 week |
 | Edit video | DaVinci, Adobe, or Synthesia | 2-8 hours |
@@ -181,6 +209,15 @@ Add to `../advancedcreationstudio/index.html` hero section:
 - Check Node version: `node --version` (should be 18+)
 - Clear cache: `rm -rf node_modules && npm install`
 - Check logs: `vercel logs` in dashboard
+
+**Site shows the Expo starter page ("Welcome to Expo")?**
+Work through these in order — it is almost never the build:
+1. Are you on a **hash URL**? Those never update. Use the no-hash production URL.
+2. **Hard reload** / incognito. Static exports cache aggressively.
+3. `vercel project ls` — is more than one project serving this app?
+4. Only then check the build: `rm -rf dist && npx expo export --platform web`
+   and `grep -c "reset-project" dist/index.html` (must be 0). If that is 0
+   locally, the repo is fine and the problem is which URL you are looking at.
 
 **Video generation API key error?**
 - Confirm key is set: `echo $GOOGLE_API_KEY`

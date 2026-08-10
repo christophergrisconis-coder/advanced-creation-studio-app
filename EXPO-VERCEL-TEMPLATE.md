@@ -119,7 +119,79 @@ failure mode looks identical in both until you read the exported HTML.
 
 ---
 
-## 4. New project checklist
+## 4. Vercel project hygiene — the trap that wastes the most time
+
+Everything above is about making the build correct. This section is about being
+able to *tell* that it's correct, which turned out to be the harder problem.
+
+### Deployment URLs with a hash are frozen forever
+
+```
+advanced-creation-studio-app.vercel.app                    ← production alias, updates on push
+advanced-creation-studio-app-v2-live-p7j6852cb.vercel.app  ← ONE build, never changes
+advanced-creation-7olic0jj5-advanced-creation-studio...    ← ONE build, never changes
+```
+
+Every Vercel build gets its own permanent URL serving that exact build. A new
+push produces a *new* deployment with a *different* hash; it does not update the
+old one. Bookmark a hash URL built before a fix and it shows the broken version
+forever, which reads exactly like "my deploys aren't working."
+
+**Only ever bookmark the no-hash production alias.**
+
+### Don't run `vercel` from the project folder
+
+If a project with that name already exists, the CLI creates a *new* project with
+a random suffix rather than reusing it. Run it a few times and you get:
+
+```
+advanced-creation-studio-app
+advanced-creation-studio-app-mjpx
+advanced-creation-studio-app-s4sp
+advanced-creation-studio-app-pk46
+advanced-creation--app
+...
+```
+
+Once the repo is connected, `git push` is the entire deploy process. This repo
+reached nine Vercel projects for one app that way.
+
+### Several projects on one repo all rebuild on every push
+
+If more than one project is connected to the same repo, a single push fans out
+and redeploys all of them. Harmless, but it makes the dashboard look like
+something is thrashing, and it multiplies the URLs you might check.
+
+### Deployment Protection makes previews look broken
+
+A project with Vercel Authentication on will 302 any logged-out visitor to
+`vercel.com/sso-api`. The page isn't broken — you just can't see it, and neither
+can anyone you send it to.
+
+### Auditing what's actually deployed
+
+```bash
+vercel project ls
+```
+
+Then probe each production URL for the boilerplate signature. Note that the
+starter renders `Welcome to&nbsp;Expo`, so a literal grep for "Welcome to Expo"
+misses it — match on the hints instead:
+
+```bash
+curl -sL https://<url> | grep -c "reset-project\|Try editing"   # >0 means boilerplate
+curl -sL https://<url> | grep -c "_expo/static/js/web/entry"    # >0 means an Expo build
+curl -sL https://<url> | grep -o "<title[^>]*>[^<]*</title>"    # empty title = pre-fix build
+```
+
+Delete strays with `vercel project remove <name>` — it needs an interactive
+confirmation, so pipe it: `printf 'y\n' | vercel project remove <name>`.
+`--yes` is not a valid flag, and `--non-interactive` prints the warning and
+aborts without deleting.
+
+---
+
+## 5. New project checklist
 
 - [ ] `vercel.json` as above; no `framework` key
 - [ ] `app.json` has `web.output: "static"`
@@ -132,14 +204,21 @@ failure mode looks identical in both until you read the exported HTML.
       own stock icon bundle and will ship as your app's identity
 - [ ] `expo export` run locally and `dist/` inspected
 - [ ] `git pull --rebase` before pushing if anything else writes to the repo
+- [ ] Exactly one Vercel project connected to the repo — check `vercel project ls`
+- [ ] The no-hash production URL bookmarked, not a deployment URL
 
 ---
 
-## 5. Deploying
+## 6. Deploying
 
-Vercel redeploys automatically on push to `main` once the repo is connected.
-For a manual deploy:
+Connect the repo to a Vercel project **once**, through the dashboard. After
+that, `git push` to `main` is the whole deploy process.
+
+Avoid `vercel --prod` from the project folder for routine deploys — that is what
+creates duplicate projects. Reach for the CLI only to inspect or clean up:
 
 ```bash
-npx vercel --prod
+vercel project ls                                  # what exists
+vercel project inspect <name>                      # build settings, git link
+printf 'y\n' | vercel project remove <name>        # delete a stray
 ```
