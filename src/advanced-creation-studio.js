@@ -42,6 +42,26 @@ const LOCKUP_ASPECT = 1817 / 576;
 const LOGO_MARK = require('../assets/images/logo-mark.png');
 const MARK_ASPECT = 547 / 429;
 
+// ─── CONTACT ────────────────────────────────────────────────────
+// Single source of truth for published contact details — edit here, not in
+// the JSX. Anything left blank is simply not rendered.
+const CONTACT = {
+  website:      'advancedcreationstudio.com',
+  location:     'Concord, North Carolina, US',
+  email:        'info@advancedcreationstudio.com',
+  phone:        '',
+  responseTime: 'We respond within 2 business days.',
+};
+
+// Formspree endpoint — Formspree dashboard > your form > Integration, looks
+// like https://formspree.io/f/xxxxxxxx. Paste it here and the form posts to it.
+//
+// While this is empty the submit button instead opens the visitor's mail client
+// with everything they typed prefilled, addressed to CONTACT.email. That way an
+// unconfigured form still delivers the inquiry rather than swallowing it — the
+// bug this whole section previously had.
+const FORMSPREE_ENDPOINT = '';
+
 // ─── DATA ───────────────────────────────────────────────────────
 const NAV_ITEMS = ['Home', 'About', 'Services', 'Mission', 'Contact'];
 
@@ -100,9 +120,10 @@ function BlueText({ children }) {
   return <Text style={{ color: BRAND.blue }}>{children}</Text>;
 }
 
-function BtnPrimary({ label, onPress }) {
+function BtnPrimary({ label, onPress, disabled }) {
   const scale = useRef(new Animated.Value(1)).current;
   const press = () => {
+    if (disabled) return;
     Animated.sequence([
       Animated.timing(scale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.timing(scale, { toValue: 1,    duration: 120, useNativeDriver: true }),
@@ -110,8 +131,8 @@ function BtnPrimary({ label, onPress }) {
     onPress && onPress();
   };
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={press}>
-      <Animated.View style={[styles.btnPrimary, { transform: [{ scale }] }]}>
+    <TouchableOpacity activeOpacity={disabled ? 1 : 0.9} onPress={press} disabled={disabled}>
+      <Animated.View style={[styles.btnPrimary, disabled && styles.btnDisabled, { transform: [{ scale }] }]}>
         <Text style={styles.btnPrimaryText}>{label}</Text>
       </Animated.View>
     </TouchableOpacity>
@@ -336,23 +357,70 @@ function ContactSection() {
   const [message,  setMessage]  = useState('');
   const [interest, setInterest] = useState(0);
   const [sent,     setSent]     = useState(false);
+  const [sending,  setSending]  = useState(false);
   const [error,    setError]    = useState('');
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim() || !email.trim()) {
       setError('Please enter your name and email address.');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
     setError('');
-    setSent(true);
-    setTimeout(() => {
-      setSent(false);
-      setName(''); setOrg(''); setEmail(''); setMessage('');
-    }, 6000);
+
+    const fields = {
+      name:         name.trim(),
+      organization: org.trim(),
+      email:        email.trim(),
+      interest:     INTEREST_OPTIONS[interest],
+      message:      message.trim(),
+      _subject:     `Partnership inquiry — ${name.trim()}`,
+    };
+
+    // No endpoint configured yet: hand off to the visitor's mail client rather
+    // than reporting a success that never happened.
+    if (!FORMSPREE_ENDPOINT) {
+      const body = [
+        `Name: ${fields.name}`,
+        `Organization: ${fields.organization || '—'}`,
+        `Email: ${fields.email}`,
+        `Area of interest: ${fields.interest}`,
+        '',
+        fields.message || '(no message)',
+      ].join('\n');
+      Linking.openURL(
+        `mailto:${CONTACT.email}?subject=${encodeURIComponent(fields._subject)}&body=${encodeURIComponent(body)}`
+      );
+      return;
+    }
+
+    setSending(true);
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(fields),
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error(detail?.errors?.[0]?.message || `The server returned ${res.status}.`);
+      }
+      setSending(false);
+      setSent(true);
+      setName(''); setOrg(''); setEmail(''); setMessage(''); setInterest(0);
+    } catch (e) {
+      setSending(false);
+      const detail = /[.!?]$/.test(e.message) ? e.message : `${e.message}.`;
+      setError(`Sorry — that didn't send. ${detail} Please email ${CONTACT.email} directly.`);
+    }
   };
 
-  const openWebsite = () => Linking.openURL('https://advancedcreationstudio.com');
-  const openEmail   = () => Linking.openURL('mailto:info@advancedcreationstudio.com');
+  const openWebsite = () => Linking.openURL(`https://${CONTACT.website}`);
+  const openEmail   = () => Linking.openURL(`mailto:${CONTACT.email}`);
+  const openPhone   = () => Linking.openURL(`tel:${CONTACT.phone.replace(/[^\d+]/g, '')}`);
 
   return (
     <View style={styles.section}>
@@ -365,10 +433,11 @@ function ContactSection() {
 
       {/* Contact details */}
       {[
-        { icon: '🌐', label: 'WEBSITE',  value: 'advancedcreationstudio.com', onPress: openWebsite },
-        { icon: '📍', label: 'LOCATION', value: 'Concord, North Carolina, US' },
-        { icon: '📧', label: 'EMAIL',    value: 'info@advancedcreationstudio.com', onPress: openEmail },
-      ].map((d, i) => (
+        { icon: '🌐', label: 'WEBSITE',  value: CONTACT.website,  onPress: openWebsite },
+        { icon: '📍', label: 'LOCATION', value: CONTACT.location },
+        { icon: '📧', label: 'EMAIL',    value: CONTACT.email,    onPress: openEmail },
+        { icon: '📞', label: 'PHONE',    value: CONTACT.phone,    onPress: openPhone },
+      ].filter(d => d.value).map((d, i) => (
         <TouchableOpacity key={i} style={styles.contactDetail} onPress={d.onPress} activeOpacity={d.onPress ? 0.7 : 1}>
           <View style={styles.contactIcon}><Text style={{ fontSize: 18 }}>{d.icon}</Text></View>
           <View>
@@ -435,10 +504,16 @@ function ContactSection() {
 
         {sent ? (
           <View style={styles.formSuccess}>
-            <Text style={styles.formSuccessText}>✓ Inquiry received. We will respond within 2 business days.</Text>
+            <Text style={styles.formSuccessText}>
+              ✓ Inquiry received.{CONTACT.responseTime ? ` ${CONTACT.responseTime}` : ''}
+            </Text>
           </View>
         ) : (
-          <BtnPrimary label="SEND PARTNERSHIP INQUIRY" onPress={handleSubmit} />
+          <BtnPrimary
+            label={sending ? 'SENDING…' : 'SEND PARTNERSHIP INQUIRY'}
+            onPress={handleSubmit}
+            disabled={sending}
+          />
         )}
       </View>
     </View>
@@ -672,6 +747,7 @@ const styles = StyleSheet.create({
 
   // Buttons
   btnPrimary: { backgroundColor: BRAND.blue, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8 },
+  btnDisabled: { opacity: 0.55 },
   btnPrimaryText: { color: BRAND.white, fontWeight: '700', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' },
   btnOutline: { borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', paddingVertical: 13, paddingHorizontal: 24, borderRadius: 8 },
   btnOutlineText: { color: BRAND.white, fontWeight: '700', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' },
