@@ -1,0 +1,25 @@
+{
+  "name": "CodeDojo",
+  "version": "1.1.0",
+  "description": "Interactive, AI-powered study guide that teaches Python, JavaScript, TypeScript, HTML, CSS, React, React Native, and EAS Build.",
+  "author": "christophergrisconis-coder",
+  "license": "MIT",
+  "features": [
+    "AI Tutor chat widget (Gemini API ready)",
+    "8 language and framework learning tracks",
+    "Progress tracker with localStorage persistence",
+    "Dark mode toggle",
+    "Responsive grid layout",
+    "Open Graph / social preview meta tags",
+    "Sticky navigation bar"
+  ],
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "techStack": {
+    "frontend": "Vanilla HTML/CSS/JS",
+    "ai": "Google Gemini API",
+    "fonts": "Inter + Fira Code (Google Fonts)"
+  }
+}
