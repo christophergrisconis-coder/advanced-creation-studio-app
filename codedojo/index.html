@@ -5,296 +5,689 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CodeDojo — AI-Powered Study Guide</title>
   <meta name="description" content="Interactive AI-powered study guide for Python, JavaScript, TypeScript, HTML, CSS, React, React Native, and EAS Build." />
-  <!-- Open Graph / Social Preview -->
   <meta property="og:title" content="CodeDojo — AI Study Guide" />
   <meta property="og:description" content="Learn to code interactively with AI-powered lessons across 8 languages and frameworks." />
   <meta property="og:type" content="website" />
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --bg: #0f0f1a;
-      --surface: #1a1a2e;
-      --accent: #7c3aed;
-      --accent2: #06b6d4;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --radius: 12px;
+    :root{
+      --bg:#0f0f1a;--surface:#1a1a2e;--surface2:#22223b;
+      --accent:#7c3aed;--accent2:#06b6d4;--green:#22c55e;
+      --red:#ef4444;--yellow:#f59e0b;
+      --text:#e2e8f0;--muted:#94a3b8;--radius:12px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
+    .light-mode{
+      --bg:#f8fafc;--surface:#ffffff;--surface2:#f1f5f9;
+      --text:#0f172a;--muted:#64748b;
     }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+
+    /* ── TOAST ── */
+    #toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:#fff;padding:.65rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999}
+    #toast.show{opacity:1}
+
     /* ── NAV ── */
-    nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 2rem;
-      background: var(--surface);
-      border-bottom: 1px solid #ffffff10;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo { font-size: 1.4rem; font-weight: 700; color: var(--accent2); letter-spacing: -0.5px; }
-    .nav-links a {
-      color: var(--muted);
-      text-decoration: none;
-      margin-left: 1.5rem;
-      font-size: 0.9rem;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: var(--text); }
+    nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:var(--surface);border-bottom:1px solid #ffffff10;position:sticky;top:0;z-index:100;gap:1rem;flex-wrap:wrap}
+    .logo{font-size:1.4rem;font-weight:700;color:var(--accent2);letter-spacing:-.5px;white-space:nowrap}
+    .nav-links{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:.88rem;transition:color .2s}
+    .nav-links a:hover{color:var(--text)}
+    .nav-right{display:flex;align-items:center;gap:.6rem}
+    /* search */
+    .search-wrap{position:relative}
+    .search-input{background:var(--surface2);border:1px solid #ffffff15;border-radius:8px;padding:.38rem .75rem .38rem 2rem;color:var(--text);font-size:.85rem;width:180px;outline:none;transition:border-color .2s}
+    .search-input:focus{border-color:var(--accent)}
+    .search-icon{position:absolute;left:.55rem;top:50%;transform:translateY(-50%);opacity:.4;font-size:.8rem}
+    /* streak badge */
+    .streak{display:flex;align-items:center;gap:.3rem;background:#f59e0b22;border:1px solid #f59e0b44;border-radius:8px;padding:.3rem .65rem;font-size:.8rem;font-weight:700;color:#f59e0b;cursor:default}
+    /* notif bell */
+    .notif-btn{position:relative;background:none;border:1px solid #ffffff20;border-radius:8px;padding:.35rem .6rem;color:var(--muted);cursor:pointer;font-size:1rem}
+    .notif-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--red)}
+    .theme-toggle{background:none;border:1px solid #ffffff20;border-radius:8px;padding:.35rem .75rem;color:var(--muted);cursor:pointer;font-size:.85rem}
+    /* kbd hint */
+    .kbd-hint{font-size:.72rem;color:var(--muted);padding:.15rem .4rem;border:1px solid #ffffff20;border-radius:4px;font-family:'Fira Code',monospace}
+
+    /* ── ONBOARDING MODAL ── */
+    .modal-overlay{position:fixed;inset:0;background:#00000088;z-index:200;display:flex;align-items:center;justify-content:center}
+    .modal-overlay.hidden{display:none}
+    .modal{background:var(--surface);border-radius:16px;padding:2rem;max-width:480px;width:90%;border:1px solid #ffffff15;animation:pop .25s ease}
+    @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+    .modal h2{font-size:1.4rem;margin-bottom:.5rem}
+    .modal p{color:var(--muted);font-size:.9rem;line-height:1.6;margin-bottom:1.2rem}
+    .modal-steps{display:flex;gap:.75rem;margin-bottom:1.5rem}
+    .modal-step{flex:1;background:var(--surface2);border-radius:10px;padding:.85rem;text-align:center;font-size:.8rem}
+    .modal-step .step-icon{font-size:1.6rem;margin-bottom:.3rem}
+    .modal-step .step-label{color:var(--muted)}
+
     /* ── HERO ── */
-    .hero {
-      text-align: center;
-      padding: 5rem 2rem 3rem;
-      background: radial-gradient(ellipse at top, #1e0a40 0%, var(--bg) 60%);
-    }
-    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; line-height: 1.15; }
-    .hero h1 span { color: var(--accent2); }
-    .hero p { color: var(--muted); margin: 1rem auto; max-width: 560px; line-height: 1.7; }
-    .btn {
-      display: inline-block;
-      margin-top: 1.5rem;
-      padding: 0.75rem 2rem;
-      background: var(--accent);
-      color: #fff;
-      border-radius: 8px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: opacity 0.2s, transform 0.2s;
-      cursor: pointer;
-      border: none;
-      font-size: 1rem;
-    }
-    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid var(--accent);
-      color: var(--accent2);
-      margin-left: 0.75rem;
-    }
+    .hero{text-align:center;padding:5rem 2rem 3rem;background:radial-gradient(ellipse at top,#1e0a40 0%,var(--bg) 60%)}
+    .hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:700;line-height:1.15}
+    .hero h1 span{color:var(--accent2)}
+    .hero p{color:var(--muted);margin:1rem auto;max-width:560px;line-height:1.7}
+    /* animated stat bar */
+    .hero-stats{display:flex;justify-content:center;gap:2rem;margin-top:2.5rem;flex-wrap:wrap}
+    .stat-item{text-align:center}
+    .stat-num{font-size:1.8rem;font-weight:700;color:var(--accent2)}
+    .stat-label{font-size:.78rem;color:var(--muted)}
+    .btn{display:inline-block;margin-top:1.5rem;padding:.75rem 2rem;background:var(--accent);color:#fff;border-radius:8px;font-weight:600;text-decoration:none;transition:opacity .2s,transform .2s;cursor:pointer;border:none;font-size:1rem}
+    .btn:hover{opacity:.88;transform:translateY(-1px)}
+    .btn-ghost{background:transparent;border:1px solid var(--accent);color:var(--accent2);margin-left:.75rem}
+
+    /* ── SECTION SHARED ── */
+    .section-title{font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;text-align:center}
+    .section-title span{color:var(--accent2)}
+
     /* ── TRACKS ── */
-    .tracks {
-      padding: 3rem 2rem;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    .section-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-    .section-title span { color: var(--accent2); }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-    .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      border: 1px solid #ffffff0d;
-      transition: border-color 0.2s, transform 0.2s;
-      cursor: pointer;
-    }
-    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .card-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .card-title { font-weight: 600; margin-bottom: 0.25rem; }
-    .card-desc { font-size: 0.82rem; color: var(--muted); }
-    .badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      padding: 0.2rem 0.5rem;
-      border-radius: 20px;
-      background: #7c3aed22;
-      color: var(--accent2);
-      margin-top: 0.5rem;
-    }
-    /* ── AI CHAT WIDGET ── */
-    .ai-section {
-      max-width: 720px;
-      margin: 0 auto 3rem;
-      padding: 0 2rem;
-    }
-    .chat-box {
-      background: var(--surface);
-      border-radius: var(--radius);
-      border: 1px solid #ffffff10;
-      overflow: hidden;
-    }
-    .chat-header {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #ffffff10;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
-    .chat-body { padding: 1rem; min-height: 120px; font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--muted); }
-    .chat-msg-ai { color: var(--accent2); margin-bottom: 0.5rem; }
-    .chat-input-row {
-      display: flex;
-      border-top: 1px solid #ffffff10;
-    }
-    .chat-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      padding: 0.75rem 1rem;
-      color: var(--text);
-      font-size: 0.9rem;
-      font-family: inherit;
-    }
-    .chat-send {
-      padding: 0 1rem;
-      background: var(--accent);
-      border: none;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-    /* ── PROGRESS ── */
-    .progress-section {
-      max-width: 1100px;
-      margin: 0 auto 3rem;
-      padding: 0 2rem;
-    }
-    .progress-bar-wrap { background: #ffffff10; border-radius: 99px; height: 8px; margin: 0.4rem 0 0.8rem; }
-    .progress-bar { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-    .progress-label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--muted); }
-    /* ── DARK-MODE TOGGLE ── */
-    .theme-toggle {
-      background: none;
-      border: 1px solid #ffffff20;
-      border-radius: 8px;
-      padding: 0.35rem 0.75rem;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 0.85rem;
-    }
+    .tracks{padding:3rem 2rem;max-width:1100px;margin:0 auto}
+    .filter-row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.2rem}
+    .filter-btn{background:var(--surface2);border:1px solid #ffffff15;border-radius:20px;padding:.3rem .85rem;font-size:.8rem;color:var(--muted);cursor:pointer;transition:all .2s}
+    .filter-btn.active,.filter-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}
+    .card{background:var(--surface);border-radius:var(--radius);padding:1.25rem;border:1px solid #ffffff0d;transition:border-color .2s,transform .2s;cursor:pointer;position:relative}
+    .card:hover{border-color:var(--accent);transform:translateY(-2px)}
+    .card.completed{border-color:var(--green)!important}
+    .card.completed::after{content:'✓';position:absolute;top:.6rem;right:.75rem;color:var(--green);font-weight:700;font-size:.85rem}
+    .card-icon{font-size:2rem;margin-bottom:.5rem}
+    .card-title{font-weight:600;margin-bottom:.25rem}
+    .card-desc{font-size:.82rem;color:var(--muted)}
+    .badge{display:inline-block;font-size:.7rem;padding:.2rem .5rem;border-radius:20px;background:#7c3aed22;color:var(--accent2);margin-top:.5rem}
+    /* mini progress on card */
+    .card-progress{margin-top:.65rem;background:#ffffff10;border-radius:99px;height:4px}
+    .card-progress-fill{height:4px;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease}
+
+    /* ── CODE PLAYGROUND ── */
+    .playground-section{max-width:900px;margin:0 auto 3rem;padding:0 2rem}
+    .playground-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid #ffffff10;overflow:hidden}
+    .playground-header{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;border-bottom:1px solid #ffffff10;font-size:.85rem;font-weight:600}
+    .lang-tabs{display:flex;gap:.4rem}
+    .lang-tab{background:var(--surface2);border:none;border-radius:6px;padding:.25rem .7rem;font-size:.78rem;color:var(--muted);cursor:pointer;transition:all .2s}
+    .lang-tab.active{background:var(--accent);color:#fff}
+    .playground-editor{display:grid;grid-template-columns:1fr 1fr;min-height:180px}
+    .code-area{width:100%;background:#111827;border:none;outline:none;padding:1rem;font-family:'Fira Code',monospace;font-size:.85rem;color:#e2e8f0;resize:none;min-height:180px;border-right:1px solid #ffffff10}
+    .output-area{padding:1rem;font-family:'Fira Code',monospace;font-size:.82rem;color:#86efac;background:#0d1117;overflow-y:auto}
+    .output-label{color:var(--muted);font-size:.72rem;margin-bottom:.5rem}
+    .playground-footer{display:flex;gap:.6rem;padding:.65rem 1rem;border-top:1px solid #ffffff10;align-items:center}
+    .run-btn{background:var(--green);border:none;border-radius:6px;padding:.4rem 1rem;color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;transition:opacity .2s}
+    .run-btn:hover{opacity:.85}
+    .clear-btn{background:none;border:1px solid #ffffff20;border-radius:6px;padding:.4rem .9rem;color:var(--muted);font-size:.85rem;cursor:pointer}
+
+    /* ── QUIZ ENGINE ── */
+    .quiz-section{max-width:720px;margin:0 auto 3rem;padding:0 2rem}
+    .quiz-box{background:var(--surface);border-radius:var(--radius);border:1px solid #ffffff10;overflow:hidden}
+    .quiz-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid #ffffff10}
+    .quiz-header-left{font-weight:600;font-size:.9rem}
+    .quiz-timer{font-family:'Fira Code',monospace;color:var(--yellow);font-size:.9rem}
+    .quiz-body{padding:1.25rem}
+    .quiz-q{font-size:1rem;font-weight:600;margin-bottom:1rem;line-height:1.5}
+    .quiz-options{display:flex;flex-direction:column;gap:.6rem}
+    .quiz-opt{background:var(--surface2);border:1px solid #ffffff10;border-radius:8px;padding:.7rem 1rem;cursor:pointer;font-size:.9rem;transition:all .2s;text-align:left}
+    .quiz-opt:hover{border-color:var(--accent);color:var(--accent2)}
+    .quiz-opt.correct{border-color:var(--green);background:#22c55e15;color:var(--green)}
+    .quiz-opt.wrong{border-color:var(--red);background:#ef444415;color:var(--red)}
+    .quiz-footer{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-top:1px solid #ffffff10}
+    .quiz-score{font-size:.85rem;color:var(--muted)}
+    .quiz-next{background:var(--accent);border:none;border-radius:6px;padding:.4rem 1.1rem;color:#fff;font-weight:600;font-size:.85rem;cursor:pointer}
+
+    /* ── AI CHAT ── */
+    .ai-section{max-width:720px;margin:0 auto 3rem;padding:0 2rem}
+    .chat-box{background:var(--surface);border-radius:var(--radius);border:1px solid #ffffff10;overflow:hidden}
+    .chat-header{display:flex;align-items:center;gap:.6rem;padding:.75rem 1rem;border-bottom:1px solid #ffffff10;font-weight:600;font-size:.9rem;justify-content:space-between}
+    .chat-actions{display:flex;gap:.4rem}
+    .chat-action-btn{background:none;border:1px solid #ffffff15;border-radius:6px;padding:.2rem .55rem;color:var(--muted);font-size:.78rem;cursor:pointer}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+    .chat-body{padding:1rem;height:200px;overflow-y:auto;font-family:'Fira Code',monospace;font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:.4rem}
+    .msg-ai{color:var(--accent2)}
+    .msg-user{color:var(--text);text-align:right}
+    .chat-suggestions{display:flex;gap:.5rem;padding:.5rem 1rem;flex-wrap:wrap;border-bottom:1px solid #ffffff10}
+    .chat-suggestion{background:var(--surface2);border:1px solid #ffffff10;border-radius:20px;padding:.2rem .7rem;font-size:.75rem;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .2s}
+    .chat-suggestion:hover{border-color:var(--accent);color:var(--accent2)}
+    .chat-input-row{display:flex;border-top:1px solid #ffffff10}
+    .chat-input{flex:1;background:transparent;border:none;outline:none;padding:.75rem 1rem;color:var(--text);font-size:.9rem;font-family:inherit}
+    .chat-send{padding:0 1rem;background:var(--accent);border:none;color:#fff;font-weight:600;cursor:pointer;font-size:.9rem}
+
+    /* ── LEADERBOARD ── */
+    .leaderboard-section{max-width:600px;margin:0 auto 3rem;padding:0 2rem}
+    .lb-table{width:100%;border-collapse:collapse}
+    .lb-table th{text-align:left;padding:.5rem .75rem;font-size:.78rem;color:var(--muted);border-bottom:1px solid #ffffff10}
+    .lb-table td{padding:.6rem .75rem;font-size:.88rem;border-bottom:1px solid #ffffff08}
+    .lb-table tr:hover td{background:var(--surface2)}
+    .lb-rank{font-weight:700;color:var(--muted);width:30px}
+    .lb-rank.gold{color:#f59e0b}
+    .lb-rank.silver{color:#94a3b8}
+    .lb-rank.bronze{color:#b45309}
+    .lb-name{font-weight:600}
+    .lb-xp{color:var(--accent2);font-family:'Fira Code',monospace;font-size:.82rem}
+    .lb-streak{color:var(--yellow);font-size:.82rem}
+    .lb-you{background:#7c3aed15!important}
+    .lb-you td{border-bottom:1px solid var(--accent)!important}
+
+    /* ── PROGRESS SECTION ── */
+    .progress-section{max-width:1100px;margin:0 auto 3rem;padding:0 2rem}
+    .progress-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+    .progress-card{background:var(--surface);border-radius:var(--radius);padding:1rem;border:1px solid #ffffff0d}
+    .progress-label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-bottom:.3rem}
+    .progress-bar-wrap{background:#ffffff10;border-radius:99px;height:8px}
+    .progress-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1s ease}
+    .progress-lessons{font-size:.72rem;color:var(--muted);margin-top:.35rem}
+    /* XP bar */
+    .xp-section{max-width:1100px;margin:0 auto 1.5rem;padding:0 2rem}
+    .xp-bar-outer{background:var(--surface);border-radius:var(--radius);padding:1rem 1.25rem;border:1px solid #ffffff0d;display:flex;align-items:center;gap:1rem}
+    .xp-avatar{font-size:2rem}
+    .xp-info{flex:1}
+    .xp-name{font-weight:700;margin-bottom:.25rem}
+    .xp-meta{font-size:.78rem;color:var(--muted);margin-bottom:.4rem}
+    .xp-fill-wrap{background:#ffffff10;border-radius:99px;height:10px}
+    .xp-fill{height:10px;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#ef4444);transition:width 1s ease}
+    .xp-label{font-size:.72rem;color:var(--muted);margin-top:.2rem;text-align:right}
+
     /* ── FOOTER ── */
-    footer {
-      text-align: center;
-      padding: 2rem;
-      color: var(--muted);
-      font-size: 0.8rem;
-      border-top: 1px solid #ffffff0d;
-    }
+    footer{text-align:center;padding:2rem;color:var(--muted);font-size:.8rem;border-top:1px solid #ffffff0d}
+    footer a{color:var(--accent);text-decoration:none}
   </style>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav>
-    <div class="logo">⚡ CodeDojo</div>
-    <div class="nav-links">
-      <a href="#tracks">Tracks</a>
-      <a href="#ai-tutor">AI Tutor</a>
-      <a href="#progress">Progress</a>
-      <a href="#">Sign In</a>
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ONBOARDING MODAL -->
+<div class="modal-overlay" id="onboardModal">
+  <div class="modal">
+    <h2>👋 Welcome to CodeDojo!</h2>
+    <p>Your AI-powered coding journey starts here. Here's what you can do:</p>
+    <div class="modal-steps">
+      <div class="modal-step"><div class="step-icon">📚</div><div class="step-label">Pick a Track</div></div>
+      <div class="modal-step"><div class="step-icon">💡</div><div class="step-label">Run Code Live</div></div>
+      <div class="modal-step"><div class="step-icon">🤖</div><div class="step-label">Ask AI Tutor</div></div>
+      <div class="modal-step"><div class="step-icon">🏆</div><div class="step-label">Earn XP</div></div>
     </div>
-    <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
-  </nav>
+    <button class="btn" style="width:100%;margin-top:0" onclick="closeModal()">Let's Go! 🚀</button>
+  </div>
+</div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <h1>Learn to Code with <span>AI by Your Side</span></h1>
-    <p>An interactive, AI-powered study guide covering Python, JavaScript, TypeScript, HTML, CSS, React, React Native, and EAS Build — all in one place.</p>
-    <a href="#tracks" class="btn">Start Learning</a>
-    <a href="#ai-tutor" class="btn btn-ghost">Ask AI Tutor</a>
-  </section>
-
-  <!-- LEARNING TRACKS -->
-  <section class="tracks" id="tracks">
-    <h2 class="section-title">Learning <span>Tracks</span></h2>
-    <div class="grid">
-      <div class="card"><div class="card-icon">🐍</div><div class="card-title">Python</div><div class="card-desc">Fundamentals to advanced OOP</div><span class="badge">Beginner Friendly</span></div>
-      <div class="card"><div class="card-icon">🟨</div><div class="card-title">JavaScript</div><div class="card-desc">ES6+, async/await, DOM</div><span class="badge">Core Track</span></div>
-      <div class="card"><div class="card-icon">🔷</div><div class="card-title">TypeScript</div><div class="card-desc">Type safety and generics</div><span class="badge">Intermediate</span></div>
-      <div class="card"><div class="card-icon">🌐</div><div class="card-title">HTML & CSS</div><div class="card-desc">Semantic HTML, Flexbox, Grid</div><span class="badge">Foundation</span></div>
-      <div class="card"><div class="card-icon">⚛️</div><div class="card-title">React</div><div class="card-desc">Hooks, state, component patterns</div><span class="badge">Popular</span></div>
-      <div class="card"><div class="card-icon">📱</div><div class="card-title">React Native</div><div class="card-desc">Cross-platform mobile apps</div><span class="badge">Mobile</span></div>
-      <div class="card"><div class="card-icon">🚀</div><div class="card-title">EAS Build</div><div class="card-desc">Expo build & deploy pipeline</div><span class="badge">Advanced</span></div>
-      <div class="card" style="border-color:#7c3aed44"><div class="card-icon">✨</div><div class="card-title">AI Projects</div><div class="card-desc">Build with Gemini API</div><span class="badge">NEW</span></div>
+<!-- NAV -->
+<nav>
+  <div class="logo">⚡ CodeDojo</div>
+  <div class="nav-links">
+    <a href="#tracks">Tracks</a>
+    <a href="#playground">Playground</a>
+    <a href="#quiz">Quiz</a>
+    <a href="#ai-tutor">AI Tutor</a>
+    <a href="#leaderboard">Leaderboard</a>
+    <a href="#progress">Progress</a>
+  </div>
+  <div class="nav-right">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="searchInput" placeholder="Search tracks..." oninput="filterTracks(this.value)" />
     </div>
-  </section>
+    <div class="streak" title="Day streak">🔥 <span id="streakCount">5</span></div>
+    <button class="notif-btn" onclick="showToast('🔔 No new notifications')" title="Notifications">🔔<div class="notif-dot"></div></button>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+    <span class="kbd-hint">?</span>
+  </div>
+</nav>
 
-  <!-- AI TUTOR -->
-  <section class="ai-section" id="ai-tutor">
-    <h2 class="section-title">🤖 AI <span>Tutor</span></h2>
-    <div class="chat-box">
-      <div class="chat-header"><div class="dot"></div> CodeDojo AI — Powered by Gemini</div>
-      <div class="chat-body" id="chatBody">
-        <div class="chat-msg-ai">👋 Hi! Ask me anything about Python, React, TypeScript, or any topic in your track.</div>
+<!-- HERO -->
+<section class="hero">
+  <h1>Learn to Code with <span>AI by Your Side</span></h1>
+  <p>Interactive lessons, live code execution, AI tutoring, and daily quizzes — all in one place.</p>
+  <a href="#tracks" class="btn">Start Learning</a>
+  <a href="#playground" class="btn btn-ghost">Try Playground</a>
+  <div class="hero-stats">
+    <div class="stat-item"><div class="stat-num" data-target="8">0</div><div class="stat-label">Tracks</div></div>
+    <div class="stat-item"><div class="stat-num" data-target="120">0</div><div class="stat-label">Lessons</div></div>
+    <div class="stat-item"><div class="stat-num" data-target="3400">0</div><div class="stat-label">Learners</div></div>
+    <div class="stat-item"><div class="stat-num" data-target="98">0</div><div class="stat-label">% Satisfaction</div></div>
+  </div>
+</section>
+
+<!-- LEARNING TRACKS -->
+<section class="tracks" id="tracks">
+  <h2 class="section-title">Learning <span>Tracks</span></h2>
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('Beginner Friendly',this)">Beginner</button>
+    <button class="filter-btn" onclick="setFilter('Intermediate',this)">Intermediate</button>
+    <button class="filter-btn" onclick="setFilter('Advanced',this)">Advanced</button>
+    <button class="filter-btn" onclick="setFilter('Mobile',this)">Mobile</button>
+    <button class="filter-btn" onclick="setFilter('NEW',this)">New</button>
+  </div>
+  <div class="grid" id="tracksGrid">
+    <div class="card" data-badge="Beginner Friendly" data-track="Python">
+      <div class="card-icon">🐍</div><div class="card-title">Python</div>
+      <div class="card-desc">Fundamentals to advanced OOP</div>
+      <span class="badge">Beginner Friendly</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:72%"></div></div>
+    </div>
+    <div class="card" data-badge="Core Track" data-track="JavaScript">
+      <div class="card-icon">🟨</div><div class="card-title">JavaScript</div>
+      <div class="card-desc">ES6+, async/await, DOM</div>
+      <span class="badge">Core Track</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:55%"></div></div>
+    </div>
+    <div class="card" data-badge="Intermediate" data-track="TypeScript">
+      <div class="card-icon">🔷</div><div class="card-title">TypeScript</div>
+      <div class="card-desc">Type safety and generics</div>
+      <span class="badge">Intermediate</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:20%"></div></div>
+    </div>
+    <div class="card" data-badge="Foundation" data-track="HTML & CSS">
+      <div class="card-icon">🌐</div><div class="card-title">HTML &amp; CSS</div>
+      <div class="card-desc">Semantic HTML, Flexbox, Grid</div>
+      <span class="badge">Foundation</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:90%"></div></div>
+    </div>
+    <div class="card" data-badge="Intermediate" data-track="React">
+      <div class="card-icon">⚛️</div><div class="card-title">React</div>
+      <div class="card-desc">Hooks, state, component patterns</div>
+      <span class="badge">Intermediate</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:38%"></div></div>
+    </div>
+    <div class="card" data-badge="Mobile" data-track="React Native">
+      <div class="card-icon">📱</div><div class="card-title">React Native</div>
+      <div class="card-desc">Cross-platform mobile apps</div>
+      <span class="badge">Mobile</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:15%"></div></div>
+    </div>
+    <div class="card" data-badge="Advanced" data-track="EAS Build">
+      <div class="card-icon">🚀</div><div class="card-title">EAS Build</div>
+      <div class="card-desc">Expo build &amp; deploy pipeline</div>
+      <span class="badge">Advanced</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:5%"></div></div>
+    </div>
+    <div class="card" data-badge="NEW" data-track="AI Projects" style="border-color:#7c3aed44">
+      <div class="card-icon">✨</div><div class="card-title">AI Projects</div>
+      <div class="card-desc">Build with Gemini API</div>
+      <span class="badge">NEW</span>
+      <div class="card-progress"><div class="card-progress-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CODE PLAYGROUND -->
+<section class="playground-section" id="playground">
+  <h2 class="section-title">🖥️ Code <span>Playground</span></h2>
+  <div class="playground-wrap">
+    <div class="playground-header">
+      <div class="lang-tabs">
+        <button class="lang-tab active" onclick="setLang('js',this)">JavaScript</button>
+        <button class="lang-tab" onclick="setLang('html',this)">HTML</button>
+        <button class="lang-tab" onclick="setLang('py',this)">Python*</button>
       </div>
-      <div class="chat-input-row">
-        <input class="chat-input" id="chatInput" type="text" placeholder="e.g. Explain React useEffect..." />
-        <button class="chat-send" onclick="sendMessage()">Send</button>
+      <span style="font-size:.75rem;color:var(--muted)">*Python runs simulated</span>
+    </div>
+    <div class="playground-editor">
+      <textarea class="code-area" id="codeEditor" spellcheck="false">// Try JavaScript here!
+console.log('Hello, CodeDojo! 🥋');
+
+const greet = name => `Welcome, ${name}!`;
+console.log(greet('Learner'));</textarea>
+      <div class="output-area" id="codeOutput"><div class="output-label">▶ Output</div><div id="outputText" style="white-space:pre-wrap">Click Run to execute...</div></div>
+    </div>
+    <div class="playground-footer">
+      <button class="run-btn" onclick="runCode()">▶ Run</button>
+      <button class="clear-btn" onclick="clearCode()">Clear</button>
+      <button class="clear-btn" onclick="copyCode()">📋 Copy</button>
+      <span style="margin-left:auto;font-size:.75rem;color:var(--muted)">Ctrl+Enter to run</span>
+    </div>
+  </div>
+</section>
+
+<!-- QUIZ ENGINE -->
+<section class="quiz-section" id="quiz">
+  <h2 class="section-title">🧠 Daily <span>Quiz</span></h2>
+  <div class="quiz-box">
+    <div class="quiz-header">
+      <div class="quiz-header-left">Question <span id="qNum">1</span> / <span id="qTotal">5</span></div>
+      <div class="quiz-timer" id="quizTimer">⏱ 20s</div>
+    </div>
+    <div class="quiz-body">
+      <div class="quiz-q" id="quizQ">Loading question...</div>
+      <div class="quiz-options" id="quizOpts"></div>
+    </div>
+    <div class="quiz-footer">
+      <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizMax">0</span></div>
+      <button class="quiz-next" onclick="nextQuestion()">Next →</button>
+    </div>
+  </div>
+</section>
+
+<!-- AI TUTOR -->
+<section class="ai-section" id="ai-tutor">
+  <h2 class="section-title">🤖 AI <span>Tutor</span></h2>
+  <div class="chat-box">
+    <div class="chat-header">
+      <div style="display:flex;align-items:center;gap:.6rem"><div class="dot"></div> CodeDojo AI — Gemini</div>
+      <div class="chat-actions">
+        <button class="chat-action-btn" onclick="clearChat()">Clear</button>
+        <button class="chat-action-btn" onclick="exportChat()">Export</button>
       </div>
     </div>
-  </section>
+    <div class="chat-suggestions">
+      <span class="chat-suggestion" onclick="suggestQ(this)">Explain useEffect</span>
+      <span class="chat-suggestion" onclick="suggestQ(this)">What is a closure?</span>
+      <span class="chat-suggestion" onclick="suggestQ(this)">Python vs JS</span>
+      <span class="chat-suggestion" onclick="suggestQ(this)">TypeScript generics</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <div class="msg-ai">👋 Hi! Ask me anything about your track. Try a suggestion above!</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" type="text" placeholder="e.g. Explain React useEffect..." />
+      <button class="chat-send" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</section>
 
-  <!-- PROGRESS TRACKER -->
-  <section class="progress-section" id="progress">
-    <h2 class="section-title">Your <span>Progress</span></h2>
-    <div class="progress-label"><span>Python</span><span>72%</span></div>
-    <div class="progress-bar-wrap"><div class="progress-bar" style="width:72%"></div></div>
-    <div class="progress-label"><span>JavaScript</span><span>55%</span></div>
-    <div class="progress-bar-wrap"><div class="progress-bar" style="width:55%"></div></div>
-    <div class="progress-label"><span>React</span><span>38%</span></div>
-    <div class="progress-bar-wrap"><div class="progress-bar" style="width:38%"></div></div>
-    <div class="progress-label"><span>TypeScript</span><span>20%</span></div>
-    <div class="progress-bar-wrap"><div class="progress-bar" style="width:20%"></div></div>
-  </section>
+<!-- LEADERBOARD -->
+<section class="leaderboard-section" id="leaderboard">
+  <h2 class="section-title">🏆 <span>Leaderboard</span></h2>
+  <div style="background:var(--surface);border-radius:var(--radius);border:1px solid #ffffff10;overflow:hidden">
+    <table class="lb-table">
+      <thead><tr><th>#</th><th>Name</th><th>XP</th><th>Streak</th></tr></thead>
+      <tbody id="lbBody"></tbody>
+    </table>
+  </div>
+</section>
 
-  <footer>
-    &copy; 2026 CodeDojo · Built with ❤️ &amp; Gemini AI · <a href="#" style="color:#7c3aed">Privacy</a>
-  </footer>
+<!-- XP BAR -->
+<div class="xp-section">
+  <div class="xp-bar-outer">
+    <div class="xp-avatar">🥷</div>
+    <div class="xp-info">
+      <div class="xp-name">You — Level 4 Ninja</div>
+      <div class="xp-meta">1,240 XP · Joined Aug 2026</div>
+      <div class="xp-fill-wrap"><div class="xp-fill" style="width:62%"></div></div>
+      <div class="xp-label">1,240 / 2,000 XP to Level 5</div>
+    </div>
+  </div>
+</div>
 
-  <script>
-    // ── Simulated AI chat (replace with real Gemini API call) ──
-    function sendMessage() {
-      const input = document.getElementById('chatInput');
-      const body = document.getElementById('chatBody');
-      const userText = input.value.trim();
-      if (!userText) return;
-      body.innerHTML += `<div style="color:#e2e8f0;margin-bottom:0.4rem">🧑 ${userText}</div>`;
-      input.value = '';
-      setTimeout(() => {
-        body.innerHTML += `<div class="chat-msg-ai">🤖 Great question! (Connect Gemini API key to get live answers.)</div>`;
-        body.scrollTop = body.scrollHeight;
-      }, 600);
-    }
-    document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+<!-- PROGRESS -->
+<section class="progress-section" id="progress">
+  <h2 class="section-title">Your <span>Progress</span></h2>
+  <div class="progress-grid">
+    <div class="progress-card">
+      <div class="progress-label"><span>Python</span><span>72%</span></div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:72%"></div></div>
+      <div class="progress-lessons">18 / 25 lessons complete</div>
+    </div>
+    <div class="progress-card">
+      <div class="progress-label"><span>JavaScript</span><span>55%</span></div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:55%"></div></div>
+      <div class="progress-lessons">11 / 20 lessons complete</div>
+    </div>
+    <div class="progress-card">
+      <div class="progress-label"><span>React</span><span>38%</span></div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:38%"></div></div>
+      <div class="progress-lessons">6 / 16 lessons complete</div>
+    </div>
+    <div class="progress-card">
+      <div class="progress-label"><span>TypeScript</span><span>20%</span></div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:20%"></div></div>
+      <div class="progress-lessons">3 / 15 lessons complete</div>
+    </div>
+    <div class="progress-card">
+      <div class="progress-label"><span>HTML &amp; CSS</span><span>90%</span></div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:90%"></div></div>
+      <div class="progress-lessons">18 / 20 lessons complete</div>
+    </div>
+    <div class="progress-card">
+      <div class="progress-label"><span>React Native</span><span>15%</span></div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:15%"></div></div>
+      <div class="progress-lessons">2 / 14 lessons complete</div>
+    </div>
+  </div>
+</section>
 
-    // ── Dark / Light theme toggle ──
-    function toggleTheme() {
-      document.documentElement.style.setProperty('--bg', document.documentElement.style.getPropertyValue('--bg') === '#ffffff' ? '#0f0f1a' : '#ffffff');
-    }
+<footer>
+  &copy; 2026 CodeDojo &middot; Built with ❤️ &amp; Gemini AI &middot;
+  <a href="#">Privacy</a> &middot; <a href="#">Terms</a> &middot;
+  <a href="https://github.com/christophergrisconis-coder/advanced-creation-studio-app" target="_blank">GitHub</a>
+</footer>
 
-    // ── Persist progress in localStorage ──
-    document.querySelectorAll('.card').forEach(card => {
-      card.addEventListener('click', () => {
-        const title = card.querySelector('.card-title').textContent;
-        localStorage.setItem('lastTrack', title);
-        card.style.borderColor = '#06b6d4';
-      });
-    });
-    const last = localStorage.getItem('lastTrack');
-    if (last) console.log('Resume track:', last);
-  </script>
+<script>
+// ── TOAST ──
+function showToast(msg,dur=2800){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ── ONBOARDING MODAL ──
+function closeModal(){
+  document.getElementById('onboardModal').classList.add('hidden');
+  localStorage.setItem('cd_onboarded','1');
+}
+if(localStorage.getItem('cd_onboarded')) closeModal();
+
+// ── THEME TOGGLE ──
+let isDark=true;
+function toggleTheme(){
+  isDark=!isDark;
+  document.body.classList.toggle('light-mode',!isDark);
+  document.getElementById('themeBtn').textContent=isDark?'🌙 Dark':'☀️ Light';
+  localStorage.setItem('cd_theme',isDark?'dark':'light');
+}
+if(localStorage.getItem('cd_theme')==='light') toggleTheme();
+
+// ── ANIMATED STATS ──
+document.querySelectorAll('[data-target]').forEach(el=>{
+  const target=+el.dataset.target,suffix=el.parentElement.querySelector('.stat-label').textContent.includes('%')?'%':'';
+  let cur=0;const step=Math.ceil(target/50);
+  const iv=setInterval(()=>{
+    cur=Math.min(cur+step,target);
+    el.textContent=cur.toLocaleString()+(suffix&&cur===target?'%':'');
+    if(cur>=target)clearInterval(iv);
+  },30);
+});
+
+// ── TRACK FILTER + SEARCH ──
+let activeFilter='all';
+function setFilter(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function filterTracks(q){
+  applyFilters(q);
+}
+function applyFilters(q=document.getElementById('searchInput').value){
+  document.querySelectorAll('#tracksGrid .card').forEach(card=>{
+    const badge=card.dataset.badge||'';
+    const track=card.dataset.track||'';
+    const matchFilter=activeFilter==='all'||badge===activeFilter;
+    const matchSearch=track.toLowerCase().includes(q.toLowerCase());
+    card.style.display=(matchFilter&&matchSearch)?'':'none';
+  });
+}
+
+// ── CARD CLICK → select + localStorage ──
+document.querySelectorAll('.card').forEach(card=>{
+  const saved=localStorage.getItem('cd_progress_'+card.dataset.track);
+  if(saved==='done') card.classList.add('completed');
+  card.addEventListener('click',()=>{
+    const title=card.dataset.track;
+    localStorage.setItem('lastTrack',title);
+    showToast('📚 Opened: '+title);
+  });
+});
+
+// ── CODE PLAYGROUND ──
+let currentLang='js';
+const langStarters={
+  js:"// Try JavaScript here!\nconsole.log('Hello, CodeDojo! 🥋');\n\nconst greet = name => `Welcome, ${name}!`;\nconsole.log(greet('Learner'));",
+  html:"<h1 style='color:#7c3aed'>Hello CodeDojo!</h1>\n<p>Edit this HTML and run it.</p>\n<button onclick=\"alert('🥋')\">Click me</button>",
+  py:"# Python (simulated)\nprint('Hello, CodeDojo!')\n\ndef greet(name):\n    return f'Welcome, {name}!'\n\nprint(greet('Learner'))"
+};
+function setLang(lang,btn){
+  currentLang=lang;
+  document.querySelectorAll('.lang-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeEditor').value=langStarters[lang];
+  document.getElementById('outputText').textContent='Click Run to execute...';
+}
+function runCode(){
+  const code=document.getElementById('codeEditor').value;
+  const out=document.getElementById('outputText');
+  if(currentLang==='js'){
+    const logs=[];
+    const fakeConsole={log:(...a)=>logs.push(a.join(' ')),error:(...a)=>logs.push('❌ '+a.join(' '))};
+    try{
+      new Function('console',code)(fakeConsole);
+      out.textContent=logs.join('\n')||'(no output)';
+    }catch(e){out.textContent='❌ '+e.message;}
+  } else if(currentLang==='html'){
+    const win=window.open('','_blank','width=600,height=400');
+    win.document.write(code);win.document.close();
+    out.textContent='✅ HTML opened in new tab';
+  } else {
+    const lines=code.split('\n').filter(l=>l.trim().startsWith('print('));
+    const results=lines.map(l=>l.replace(/print\(['"](.*)['"]\)/,'$1').replace(/print\(f['"](.*)['"]\)/,'$1'));
+    out.textContent=results.length?results.join('\n'):'(Python runs server-side — connect backend)';
+  }
+  showToast('▶ Code executed!');
+}
+function clearCode(){
+  document.getElementById('codeEditor').value=langStarters[currentLang];
+  document.getElementById('outputText').textContent='Click Run to execute...';
+}
+function copyCode(){
+  navigator.clipboard.writeText(document.getElementById('codeEditor').value);
+  showToast('📋 Copied to clipboard!');
+}
+document.getElementById('codeEditor').addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();runCode();}
+});
+
+// ── QUIZ ENGINE ──
+const questions=[
+  {q:'What does `===` check in JavaScript?',opts:['Value only','Type only','Value and type','Neither'],ans:2},
+  {q:'Which hook manages state in React?',opts:['useEffect','useState','useRef','useCallback'],ans:1},
+  {q:'What does TypeScript add to JavaScript?',opts:['Runtime speed','Static types','DOM APIs','Async support'],ans:1},
+  {q:'Which tag defines a section in HTML5?',opts:['<div>','<span>','<section>','<block>'],ans:2},
+  {q:'What command builds an Expo app with EAS?',opts:['expo build','eas build','npx build','yarn build'],ans:1}
+];
+let qIndex=0,score=0,timerVal=20,timerIv=null,answered=false;
+function loadQuestion(){
+  if(qIndex>=questions.length){endQuiz();return;}
+  answered=false;
+  const q=questions[qIndex];
+  document.getElementById('quizQ').textContent=q.q;
+  document.getElementById('qNum').textContent=qIndex+1;
+  document.getElementById('qTotal').textContent=questions.length;
+  const opts=document.getElementById('quizOpts');
+  opts.innerHTML='';
+  q.opts.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='quiz-opt';b.textContent=opt;
+    b.onclick=()=>answerQ(i,b);
+    opts.appendChild(b);
+  });
+  timerVal=20;
+  clearInterval(timerIv);
+  timerIv=setInterval(()=>{
+    timerVal--;
+    document.getElementById('quizTimer').textContent='⏱ '+timerVal+'s';
+    if(timerVal<=0){clearInterval(timerIv);if(!answered)answerQ(-1,null);}
+  },1000);
+}
+function answerQ(i,btn){
+  if(answered)return;
+  answered=true;
+  clearInterval(timerIv);
+  const correct=questions[qIndex].ans;
+  document.querySelectorAll('.quiz-opt').forEach((b,idx)=>{
+    if(idx===correct)b.classList.add('correct');
+    else if(idx===i&&i!==correct)b.classList.add('wrong');
+  });
+  if(i===correct){score++;showToast('✅ Correct! +10 XP');}
+  else showToast('❌ Wrong — correct: '+questions[qIndex].opts[correct]);
+  document.getElementById('quizScore').textContent=score;
+  document.getElementById('quizMax').textContent=qIndex+1;
+}
+function nextQuestion(){
+  qIndex++;
+  loadQuestion();
+}
+function endQuiz(){
+  document.getElementById('quizQ').textContent='🎉 Quiz complete! Score: '+score+'/'+questions.length;
+  document.getElementById('quizOpts').innerHTML='<button class="quiz-opt" onclick="restartQuiz()">🔄 Restart</button>';
+  document.getElementById('quizTimer').textContent='';
+}
+function restartQuiz(){qIndex=0;score=0;loadQuestion();}
+loadQuestion();
+
+// ── AI CHAT ──
+const aiReplies={
+  'useeffect':'useEffect runs side effects after renders. Pass [] as the second arg to run only once on mount.',
+  'closure':'A closure is a function that remembers variables from its outer scope even after that scope has closed.',
+  'python vs js':'Python excels at data science and scripting; JavaScript dominates web and React Native mobile.',
+  'typescript generics':'Generics let you write reusable code that works over many types: `function id<T>(x: T): T { return x; }`'
+};
+function sendMessage(){
+  const input=document.getElementById('chatInput');
+  const body=document.getElementById('chatBody');
+  const text=input.value.trim();
+  if(!text)return;
+  body.innerHTML+=`<div class="msg-user">🧑 ${text}</div>`;
+  input.value='';
+  const key=Object.keys(aiReplies).find(k=>text.toLowerCase().includes(k));
+  setTimeout(()=>{
+    body.innerHTML+=`<div class="msg-ai">🤖 ${key?aiReplies[key]:'Great question! Connect your Gemini API key for live AI answers.'}</div>`;
+    body.scrollTop=body.scrollHeight;
+  },600);
+}
+function suggestQ(el){
+  document.getElementById('chatInput').value=el.textContent;
+  sendMessage();
+}
+function clearChat(){
+  document.getElementById('chatBody').innerHTML='<div class="msg-ai">👋 Chat cleared. Ask me anything!</div>';
+}
+function exportChat(){
+  const text=[...document.querySelectorAll('#chatBody div')].map(d=>d.textContent).join('\n');
+  navigator.clipboard.writeText(text);
+  showToast('📋 Chat exported to clipboard!');
+}
+document.getElementById('chatInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter')sendMessage();
+});
+
+// ── LEADERBOARD ──
+const leaders=[
+  {name:'Alex K.',xp:4200,streak:21},
+  {name:'Priya S.',xp:3870,streak:14},
+  {name:'Jordan T.',xp:2990,streak:9},
+  {name:'You 🥷',xp:1240,streak:5,you:true},
+  {name:'Sam L.',xp:980,streak:3},
+];
+const lbBody=document.getElementById('lbBody');
+const medals=['gold','silver','bronze'];
+leaders.forEach((p,i)=>{
+  const tr=document.createElement('tr');
+  if(p.you)tr.className='lb-you';
+  tr.innerHTML=`<td class="lb-rank ${medals[i]||''}">${i+1}</td><td class="lb-name">${p.name}</td><td class="lb-xp">${p.xp.toLocaleString()} XP</td><td class="lb-streak">🔥 ${p.streak}</td>`;
+  lbBody.appendChild(tr);
+});
+
+// ── STREAK ──
+const today=new Date().toDateString();
+const lastVisit=localStorage.getItem('cd_lastVisit');
+let streak=+localStorage.getItem('cd_streak')||0;
+if(lastVisit!==today){streak++;localStorage.setItem('cd_streak',streak);localStorage.setItem('cd_lastVisit',today);}
+document.getElementById('streakCount').textContent=streak;
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='?')showToast('⌨️ Ctrl+Enter = Run Code | / = Search | ? = Help');
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();document.getElementById('searchInput').focus();}
+});
+</script>
 </body>
 </html>
